@@ -1,11 +1,13 @@
 import SwiftUI
 
 struct ContentView: View {
-    @AppStorage("favoriteStationId") private var favoriteStationId: Int = 0
-    @AppStorage("favoriteStationName") private var favoriteStationName: String = ""
-    @AppStorage("selectedTransports") private var selectedTransportsRaw: String = ""
-    @AppStorage("favoriteDestinationId") private var favoriteDestinationId: Int = 0
-    @AppStorage("favoriteDestinationName") private var favoriteDestinationName: String = ""
+    private static let appGroup = UserDefaults(suiteName: "group.com.linusunghammar.nexttrain")!
+
+    @AppStorage("favoriteStationId", store: ContentView.appGroup) private var favoriteStationId: Int = 0
+    @AppStorage("favoriteStationName", store: ContentView.appGroup) private var favoriteStationName: String = ""
+    @AppStorage("selectedTransports", store: ContentView.appGroup) private var selectedTransportsRaw: String = ""
+    @AppStorage("favoriteDestinationId", store: ContentView.appGroup) private var favoriteDestinationId: Int = 0
+    @AppStorage("favoriteDestinationName", store: ContentView.appGroup) private var favoriteDestinationName: String = ""
 
     @State private var departures: [SLDeparture] = []
     @State private var isLoading = false
