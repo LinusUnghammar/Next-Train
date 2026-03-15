@@ -25,8 +25,7 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Filters
+            ScrollView {
                 VStack(spacing: 8) {
                     TransportModePicker(selected: selectedTransports, toggle: toggle)
                     FilterRow(
@@ -63,30 +62,30 @@ struct ContentView: View {
 
                 // Departures
                 if isLoading {
-                    Spacer()
                     ProgressView("Hämtar avgångar...")
-                    Spacer()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 60)
                 } else if let error = errorMessage {
-                    Spacer()
                     ContentUnavailableView("Kunde inte hämta avgångar", systemImage: "exclamationmark.triangle", description: Text(error))
-                    Spacer()
+                        .padding(.top, 40)
                 } else if favoriteStationId == 0 {
-                    Spacer()
                     ContentUnavailableView("Ingen station vald", systemImage: "mappin.slash", description: Text("Välj en favoritstation ovan"))
-                    Spacer()
+                        .padding(.top, 40)
                 } else if departures.isEmpty {
-                    Spacer()
                     ContentUnavailableView("Inga avgångar", systemImage: "clock.badge.questionmark", description: Text("Inga avgångar just nu"))
-                    Spacer()
+                        .padding(.top, 40)
                 } else {
-                    List(departures) { departure in
-                        DepartureRow(departure: departure)
-                            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                    LazyVStack(spacing: 0) {
+                        ForEach(departures) { departure in
+                            DepartureRow(departure: departure)
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
+                            Divider()
+                        }
                     }
-                    .listStyle(.plain)
-                    .refreshable { await loadDepartures() }
                 }
             }
+            .refreshable { await loadDepartures() }
             .navigationTitle("Next Train")
         }
         .task(id: "\(favoriteStationId)-\(selectedTransportsRaw)-\(favoriteDestinationId)") {
@@ -96,7 +95,9 @@ struct ContentView: View {
 
     private func loadDepartures() async {
         guard favoriteStationId != 0 else { return }
-        isLoading = true
+        // Only show loading spinner on first load, not on refresh
+        let isFirstLoad = departures.isEmpty && errorMessage == nil
+        if isFirstLoad { isLoading = true }
         errorMessage = nil
         do {
             departures = try await SLClient.fetchDepartures(
@@ -105,9 +106,8 @@ struct ContentView: View {
                 viaSiteId: favoriteDestinationId == 0 ? nil : favoriteDestinationId,
                 viaSiteName: favoriteDestinationName.isEmpty ? nil : favoriteDestinationName
             )
-        } catch is CancellationError {
-            // Ignore cancellation from task(id:) changes
         } catch {
+            if Task.isCancelled { return }
             errorMessage = error.localizedDescription
             departures = []
         }
